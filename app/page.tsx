@@ -1,6 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = (supabaseUrl && supabaseAnonKey) ? createClient(supabaseUrl, supabaseAnonKey) : null
 
 interface Expense {
   id: string
@@ -66,9 +71,104 @@ export default function RetroApp() {
   const [isIOS, setIsIOS] = useState(false)
   const [showIOSHint, setShowIOSHint] = useState(false)
 
-  // Load from local storage on mount & check session storage
+  // Database sync states
+  const [isDbConnected, setIsDbConnected] = useState(false)
+  const [dbError, setDbError] = useState<string | null>(null)
+  const [isLoadingDb, setIsLoadingDb] = useState(true)
+
+  // Fetch flat ledger data from Supabase
+  const fetchLedgerFromDb = async () => {
+    if (!supabase) {
+      setIsLoadingDb(false)
+      return
+    }
+    try {
+      const { data, error } = await supabase
+        .from('flat_ledger')
+        .select('*')
+        .eq('id', 'default')
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Row doesn't exist, try to seed it
+          const initialRow = {
+            id: 'default',
+            flat_name: 'My Shared Flat',
+            expenses: [],
+            settlements: [],
+            last_change_by: 'System',
+            last_change_action: 'Ledger Initialized'
+          }
+          const { error: insertError } = await supabase
+            .from('flat_ledger')
+            .insert([initialRow])
+          
+          if (insertError) {
+            console.error("Error seeding default row:", insertError)
+            setDbError("Table 'flat_ledger' exists, but could not seed initial row. Check RLS policies.")
+          } else {
+            setIsDbConnected(true)
+            setDbError(null)
+          }
+        } else {
+          console.error("Supabase fetch error:", error)
+          setDbError("Table 'flat_ledger' not found. Run SQL schema to sync databases across devices.")
+        }
+      } else if (data) {
+        setFlatName(data.flat_name)
+        setExpenses(data.expenses || [])
+        setSettlements(data.settlements || [])
+        setLastChangeBy(data.last_change_by || 'System')
+        setLastChangeAction(data.last_change_action || 'Ledger Sync')
+        setIsDbConnected(true)
+        setDbError(null)
+      }
+    } catch (err: any) {
+      console.error("Connection error:", err)
+      setDbError("Could not connect to database. Check credentials.")
+    } finally {
+      setIsLoadingDb(false)
+    }
+  }
+
+  // Subscribe to Realtime DB updates
+  useEffect(() => {
+    if (!supabase || !isDbConnected) return
+
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'flat_ledger',
+          filter: 'id=eq.default'
+        },
+        (payload) => {
+          const newData = payload.new as any
+          if (newData) {
+            if (newData.flat_name !== undefined) setFlatName(newData.flat_name)
+            if (newData.expenses !== undefined) setExpenses(newData.expenses || [])
+            if (newData.settlements !== undefined) setSettlements(newData.settlements || [])
+            if (newData.last_change_by !== undefined) setLastChangeBy(newData.last_change_by)
+            if (newData.last_change_action !== undefined) setLastChangeAction(newData.last_change_action)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [isDbConnected])
+
+  // Load from local storage on mount & check session storage & fetch from Supabase
   useEffect(() => {
     setMounted(true)
+    
+    // Load local storage fallback first (instant display for UX)
     const storedFlat = localStorage.getItem('flatsplit_flatName')
     const storedExpenses = localStorage.getItem('flatsplit_expenses')
     const storedSettlements = localStorage.getItem('flatsplit_settlements')
@@ -101,6 +201,14 @@ export default function RetroApp() {
     // Default date to today
     const today = new Date().toISOString().split('T')[0]
     setExpDate(today)
+
+    // Fetch from Supabase
+    if (supabase) {
+      fetchLedgerFromDb()
+    } else {
+      setIsLoadingDb(false)
+      setDbError("Supabase credentials missing in environment variables.")
+    }
 
     // Listen for PWA beforeinstallprompt
     const handleBeforeInstall = (e: Event) => {
@@ -176,7 +284,7 @@ export default function RetroApp() {
   }
 
   // Save helper functions
-  const saveToStorage = (
+  const saveToStorage = async (
     updatedFlat: string,
     updatedRoommates: string[],
     updatedExpenses: Expense[],
@@ -184,6 +292,7 @@ export default function RetroApp() {
     changeBy?: string,
     changeAction?: string
   ) => {
+    // 1. Update local cache
     localStorage.setItem('flatsplit_flatName', updatedFlat)
     localStorage.setItem('flatsplit_roommates', JSON.stringify(updatedRoommates))
     localStorage.setItem('flatsplit_expenses', JSON.stringify(updatedExpenses))
@@ -196,7 +305,35 @@ export default function RetroApp() {
       setLastChangeAction(changeAction)
     }
 
-    setStatusMessage('Ledger saved to local storage.')
+    setStatusMessage('Saved locally.')
+
+    // 2. Sync to Supabase
+    if (supabase && isDbConnected) {
+      try {
+        setStatusMessage('Syncing with backend database...')
+        const { error } = await supabase
+          .from('flat_ledger')
+          .update({
+            flat_name: updatedFlat,
+            expenses: updatedExpenses,
+            settlements: updatedSettlements,
+            last_change_by: changeBy || lastChangeBy,
+            last_change_action: changeAction || lastChangeAction,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', 'default')
+
+        if (error) {
+          console.error("Supabase sync error:", error)
+          setStatusMessage('Sync failed. Saved locally only.')
+        } else {
+          setStatusMessage('Synced with backend successfully.')
+        }
+      } catch (err) {
+        console.error("Supabase sync exception:", err)
+        setStatusMessage('Sync failed. Saved locally only.')
+      }
+    }
   }
 
   // Handle Logout
@@ -605,6 +742,84 @@ export default function RetroApp() {
           </div>
         </div>
       </div>
+
+
+      {/* Database Connection Alert */}
+      {dbError ? (
+        <div style={{
+          background: '#fff0f0',
+          border: '2px solid #ff4444',
+          borderRadius: '4px',
+          padding: '12px',
+          marginBottom: '16px',
+          color: '#880000',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        }}>
+          <strong style={{ fontSize: '14px' }}>⚠️ Backend Offline (Running in Local Mode)</strong>
+          <p style={{ margin: '6px 0' }}>
+            Data is currently saved **only in your browser** and will not sync across other phones. To sync the ledger across everyone's phones, please run this single SQL query in your **Supabase Dashboard → SQL Editor**:
+          </p>
+          <pre style={{
+            background: '#ffffff',
+            border: '1px solid #ffcccc',
+            padding: '8px',
+            fontSize: '11px',
+            overflowX: 'auto',
+            fontFamily: 'monospace',
+            whiteSpace: 'pre-wrap',
+            userSelect: 'all',
+            cursor: 'pointer'
+          }} title="Click to select all for easy copying">
+{`CREATE TABLE IF NOT EXISTS flat_ledger (
+  id TEXT PRIMARY KEY,
+  flat_name TEXT NOT NULL,
+  expenses JSONB NOT NULL DEFAULT '[]'::jsonb,
+  settlements JSONB NOT NULL DEFAULT '[]'::jsonb,
+  last_change_by TEXT NOT NULL DEFAULT 'System',
+  last_change_action TEXT NOT NULL DEFAULT 'Ledger Initialized',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Disable RLS so all roommates can sync without emails
+ALTER TABLE flat_ledger DISABLE ROW LEVEL SECURITY;
+
+-- Enable Realtime so updates sync instantly in real-time
+ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
+          </pre>
+          <p style={{ fontSize: '11px', margin: '4px 0 0 0', color: '#555555' }}>
+            Once you execute the query, refresh this page. It will automatically detect the database and start syncing instantly!
+          </p>
+        </div>
+      ) : isDbConnected ? (
+        <div style={{
+          background: '#f0fff0',
+          border: '2px solid #22bb22',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          marginBottom: '16px',
+          color: '#006600',
+          fontSize: '13px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span><strong>🟢 Backend Database Online</strong> — Synced & updated in real time across all roommates' phones!</span>
+          <span style={{ fontSize: '11px', background: '#d0ffd0', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>REAL-TIME ACTIVE</span>
+        </div>
+      ) : isLoadingDb ? (
+        <div style={{
+          background: '#fffae6',
+          border: '2px solid #cca300',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          marginBottom: '16px',
+          color: '#665200',
+          fontSize: '13px'
+        }}>
+          <span>⏳ Checking backend database connection...</span>
+        </div>
+      ) : null}
 
       {/* Beginner bulletin / instruction board */}
       {showHelp ? (
