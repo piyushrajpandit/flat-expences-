@@ -1,0 +1,407 @@
+/* FlatSplit — Clean Early-Web Portal Design System */
+
+:root {
+  --bg-canvas: #f9f7f2;     /* Warm alabaster cream / soft paper */
+  --bg-card: #ffffff;       /* Clean white backgrounds */
+  --text-primary: #1d1c1a;  /* Charcoal off-black */
+  --text-muted: #5e5c54;    /* Slate-grey */
+  --border-color: #2e2c28;  /* Solid iron border */
+  --accent: #2c5470;        /* Steel / retro blue */
+  --accent-hover: #1e3d54;
+  --success: #2d6b49;       /* Muted forest green */
+  --danger: #9c3f3a;        /* Muted clay red */
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 30px 15px;
+}
+
+/* Central document wrapper */
+.portal-container {
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 4px 4px 0px 0px rgba(46, 44, 40, 0.15);
+  padding: 32px;
+}
+
+/* Header style resembling retro publications */
+.portal-header {
+  border-bottom: 2px double var(--border-color);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.portal-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+h1 {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.header-meta {
+  font-size: 12px;
+  text-align: right;
+  line-height: 1.4;
+}
+
+/* Collapsible bulletin board / help banner */
+.bulletin-board {
+  background-color: #faf6eb;
+  border: 1px dashed var(--border-color);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.bulletin-title {
+  font-family: var(--font-serif);
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 4px;
+  color: var(--accent);
+}
+
+.bulletin-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.bulletin-toggle {
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  color: var(--accent) !important;
+  display: inline-block !important;
+}
+
+.bulletin-toggle:hover {
+  color: var(--accent-hover) !important;
+}
+
+.bulletin-toggle:active {
+  transform: none !important;
+}
+
+/* Logical section grouping cards */
+fieldset {
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  margin-bottom: 20px;
+  background-color: var(--bg-card);
+}
+
+legend {
+  font-family: var(--font-serif);
+  font-weight: bold;
+  color: var(--accent);
+  padding: 0 8px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+/* Sequential Step Badges */
+.step-badge {
+  font-family: var(--font-mono);
+  background-color: var(--accent);
+  color: #ffffff;
+  font-size: 10px;
+  padding: 1px 5px;
+  margin-right: 8px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  border-radius: 0;
+  display: inline-block;
+}
+
+/* Real-time Validator Hints */
+.validator-hint {
+  font-size: 12px;
+  margin-top: 8px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 4px 8px;
+  background-color: #fcfbf9;
+  border: 1px solid var(--border-color);
+  display: inline-block;
+}
+
+.validator-valid {
+  color: var(--success);
+  border-left: 3px solid var(--success);
+}
+
+.validator-invalid {
+  color: var(--danger);
+  border-left: 3px solid var(--danger);
+}
+
+/* Early-web style input fields */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+  background-color: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  width: 100%;
+  outline: none;
+  border-radius: 0;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+select:focus {
+  background-color: #faf9f2;
+  border-color: var(--accent);
+}
+
+label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  display: block;
+  color: var(--text-muted);
+}
+
+/* Standard HTML button overrides */
+button {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 6px 14px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background-color 0.1s, transform 0.05s, box-shadow 0.05s;
+  box-shadow: 2px 2px 0px var(--border-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+button:hover {
+  background-color: #eae7db;
+}
+
+button:active {
+  box-shadow: 0px 0px 0px var(--border-color);
+  transform: translate(2px, 2px);
+}
+
+button.btn-accent {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+button.btn-accent:hover {
+  background-color: var(--accent-hover);
+}
+
+button.btn-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+  box-shadow: 2px 2px 0px var(--danger);
+}
+
+button.btn-danger:hover {
+  background-color: #fdf5f4;
+}
+
+button.btn-danger:active {
+  box-shadow: 0px 0px 0px var(--danger);
+  transform: translate(2px, 2px);
+}
+
+/* Classic HTML directory tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+th {
+  font-family: var(--font-serif);
+  font-weight: bold;
+  background-color: #f1ebd8;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+td {
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  background-color: #ffffff;
+}
+
+tr:nth-child(even) td {
+  background-color: #faf9f6;
+}
+
+/* Monospace alignment for values */
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+/* Simple list elements */
+ul {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+li {
+  line-height: 1.5;
+}
+
+/* Grid helper layout */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -10px;
+  margin-left: -10px;
+}
+
+.col-6 {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding: 0 10px;
+}
+
+.col-12 {
+  flex: 0 0 100%;
+  max-width: 100%;
+  padding: 0 10px;
+}
+
+@media (max-width: 768px) {
+  .col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+    margin-bottom: 15px;
+  }
+}
+
+/* Helpers */
+.margin-top-10 { margin-top: 10px; }
+.margin-top-20 { margin-top: 20px; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); font-size: 11px; font-style: italic; }
+.text-danger { color: var(--danger); font-weight: bold; }
+.text-success { color: var(--success); font-weight: bold; }
+
+/* Diagnostic Status Panel at Bottom */
+.statusbar {
+  margin-top: 24px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.statusbar-field {
+  font-family: var(--font-mono);
+}
+
+/* ========================================== */
+/* Mobile Phone Responsiveness Overrides      */
+/* ========================================== */
+@media (max-width: 768px) {
+  body {
+    padding: 12px 6px;
+  }
+  .portal-container {
+    padding: 16px;
+    box-shadow: 2px 2px 0px 0px rgba(46, 44, 40, 0.15);
+  }
+  .portal-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .header-meta {
+    text-align: left;
+    margin-top: 10px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 8px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 22px;
+  }
+  th, td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  button, .btn {
+    margin-bottom: 4px;
+  }
+  button.btn-accent {
+    width: 100%; /* Make action submission buttons full width on phone */
+  }
+  .text-right {
+    text-align: left;
+  }
+}
