@@ -60,6 +60,12 @@ export default function RetroApp() {
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [statusMessage, setStatusMessage] = useState('System ready.')
 
+  // PWA install trigger states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [showInstallBtn, setShowInstallBtn] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+  const [showIOSHint, setShowIOSHint] = useState(false)
+
   // Load from local storage on mount & check session storage
   useEffect(() => {
     setMounted(true)
@@ -96,6 +102,31 @@ export default function RetroApp() {
     const today = new Date().toISOString().split('T')[0]
     setExpDate(today)
 
+    // Listen for PWA beforeinstallprompt
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setShowInstallBtn(true)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+
+    // Check if running on iOS device
+    const userAgent = window.navigator.userAgent.toLowerCase()
+    const ios = /iphone|ipad|ipod/.test(userAgent)
+    setIsIOS(ios)
+
+    // On iOS Safari, beforeinstallprompt is not supported, but we can show instructions
+    // if we detect iOS and it is not already running in standalone mode (installed).
+    if (ios && !(window.navigator as any).standalone) {
+      setShowInstallBtn(true)
+    }
+
+    // Check if already running in standalone (installed)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBtn(false)
+    }
+
     // Polling session storage for 5-minute auth cache
     const checkSession = () => {
       const cachedTimeStr = sessionStorage.getItem('flatsplit_session_auth_time')
@@ -122,8 +153,27 @@ export default function RetroApp() {
 
     checkSession()
     const interval = setInterval(checkSession, 5000) // check every 5 seconds
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+    }
   }, [])
+
+  // Custom click handler for PWA install
+  const handleInstallClick = async () => {
+    if (isIOS) {
+      setShowIOSHint(true)
+      return
+    }
+    if (!deferredPrompt) return
+    deferredPrompt.prompt()
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      console.log('User accepted PWA installation')
+      setShowInstallBtn(false)
+    }
+    setDeferredPrompt(null)
+  }
 
   // Save helper functions
   const saveToStorage = (
@@ -997,6 +1047,39 @@ export default function RetroApp() {
           </div>
         )}
       </fieldset>
+
+      {/* Install Button & iOS instruction box at the bottom */}
+      {showInstallBtn && (
+        <fieldset className="margin-top-20" style={{ border: '2px solid var(--accent)' }}>
+          <legend>📲 Download & Install App</legend>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '8px 0', textAlign: 'center' }}>
+            <div>
+              <strong>FlatSplit</strong> can be downloaded and run as a standalone desktop/mobile app!
+            </div>
+            <button 
+              type="button" 
+              onClick={handleInstallClick} 
+              className="btn-success"
+              style={{ padding: '6px 16px', fontSize: '12px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              Install FlatSplit
+            </button>
+            
+            {showIOSHint && (
+              <div style={{
+                fontSize: '11px',
+                color: 'var(--text-muted)',
+                borderTop: '1px dashed var(--accent)',
+                paddingTop: '8px',
+                marginTop: '4px',
+                width: '100%'
+              }}>
+                <strong>To Install on iOS (Safari):</strong> Tap the <strong>Share</strong> button (box with an up arrow ⎋) at the bottom/top of Safari, and select <strong>Add to Home Screen</strong>.
+              </div>
+            )}
+          </div>
+        </fieldset>
+      )}
 
       {/* Audit-trail Statusbar displaying last activity */}
       <div className="statusbar">
