@@ -841,31 +841,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
         </Link>
       </div>
 
-      {/* SECTION 1: Flat Settings (LOCKED & READ-ONLY) */}
-      <fieldset>
-        <legend>
-          <span className="step-badge">Step 1</span> Configurations (Locked)
-        </legend>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', padding: '4px 0' }}>
-          <div>
-            <strong>Flat Name:</strong> {flatName}
-          </div>
-          <div>
-            <strong>Flatmates:</strong> {roommates.join(', ')}
-          </div>
-          <div style={{ fontStyle: 'italic', fontSize: '11px', color: 'var(--text-muted)', borderTop: '1px dashed var(--border-color)', paddingTop: '8px', marginTop: '4px' }}>
-            🔒 Flat settings and roommate lists are locked and cannot be edited.
-          </div>
-        </div>
-      </fieldset>
-
       {/* SECTION 2: Operations forms */}
       <div className="row">
         {/* Add Shared Expense */}
         <div className="col-6">
           <fieldset style={{ height: '100%' }}>
             <legend>
-              <span className="step-badge">Step 2</span> Record Shared Expense
+              <span className="step-badge">Step 1</span> Record Shared Expense
             </legend>
             <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1004,7 +986,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
         <div className="col-6" id="settle-section">
           <fieldset style={{ height: '100%' }}>
             <legend>
-              <span className="step-badge">Step 3</span> Settle Up Payment
+              <span className="step-badge">Step 2</span> Settle Up Payment
             </legend>
             <form onSubmit={handleAddSettlement} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <p className="text-muted" style={{ marginBottom: '4px' }}>Log a direct cash or bank transfer payment between flatmates to offset existing debts.</p>
@@ -1070,7 +1052,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
         <div className="col-6">
           <fieldset style={{ height: '100%' }}>
             <legend>
-              <span className="step-badge">Step 4</span> Active Net Balances
+              <span className="step-badge">Step 3</span> Active Net Balances
             </legend>
             <table border={1}>
               <thead>
@@ -1114,7 +1096,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
         <div className="col-6">
           <fieldset style={{ height: '100%' }}>
             <legend>
-              <span className="step-badge">Step 5</span> Smart Settle Guide
+              <span className="step-badge">Step 4</span> Smart Settle Guide
             </legend>
             {suggestedTransactions.length === 0 ? (
               <div style={{ padding: '24px 12px', textAlign: 'center', backgroundColor: '#faf8f2', border: '1px dashed #2e2c28' }}>
