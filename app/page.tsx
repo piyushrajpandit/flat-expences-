@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
@@ -31,6 +31,7 @@ interface Settlement {
 
 export default function RetroApp() {
   const [mounted, setMounted] = useState(false)
+  const lastLocalSaveRef = useRef<number>(0)
   const [showHelp, setShowHelp] = useState(true)
   const [flatName, setFlatName] = useState('My Shared Flat')
   
@@ -76,49 +77,64 @@ export default function RetroApp() {
   const [dbError, setDbError] = useState<string | null>(null)
   const [isLoadingDb, setIsLoadingDb] = useState(true)
 
-  // Fetch flat ledger data from Supabase
+  // Fetch flat ledger data from Backend API
   const fetchLedgerFromDb = async () => {
-    if (!supabase) {
-      setIsLoadingDb(false)
-      return
-    }
     try {
-      const { data, error } = await supabase
-        .from('flat_ledger')
-        .select('*')
-        .eq('id', 'default')
-        .single()
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Row doesn't exist, try to seed it
-          const initialRow = {
-            id: 'default',
-            flat_name: 'My Shared Flat',
-            expenses: [],
-            settlements: [],
-            last_change_by: 'System',
-            last_change_action: 'Ledger Initialized'
-          }
-          const { error: insertError } = await supabase
-            .from('flat_ledger')
-            .insert([initialRow])
+      const res = await fetch('/api/ledger?t=' + Date.now(), { cache: 'no-store' })
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.error || 'Failed to fetch ledger')
+      }
+      const data = await res.json()
+      if (data) {
+        // Merge offline local storage data (if any exists from before the backend was online)
+        const storedExpensesStr = localStorage.getItem('flatsplit_expenses')
+        const storedSettlementsStr = localStorage.getItem('flatsplit_settlements')
+        
+        let localExpenses: Expense[] = []
+        let localSettlements: Settlement[] = []
+        
+        try {
+          if (storedExpensesStr) localExpenses = JSON.parse(storedExpensesStr)
+        } catch (e) {}
+        try {
+          if (storedSettlementsStr) localSettlements = JSON.parse(storedSettlementsStr)
+        } catch (e) {}
+        
+        const dbExpenses: Expense[] = data.expenses || []
+        const dbSettlements: Settlement[] = data.settlements || []
+        
+        // Find local items not present in the database (uniquely identified by id)
+        const missingExpenses = localExpenses.filter(
+          (le) => le && le.id && !dbExpenses.some((de) => de && de.id === le.id)
+        )
+        const missingSettlements = localSettlements.filter(
+          (ls) => ls && ls.id && !dbSettlements.some((ds) => ds && ds.id === ls.id)
+        )
+        
+        if (missingExpenses.length > 0 || missingSettlements.length > 0) {
+          const mergedExpenses = [...missingExpenses, ...dbExpenses]
+          const mergedSettlements = [...missingSettlements, ...dbSettlements]
           
-          if (insertError) {
-            console.error("Error seeding default row:", insertError)
-            setDbError("Table 'flat_ledger' exists, but could not seed initial row. Check RLS policies.")
-          } else {
-            setIsDbConnected(true)
-            setDbError(null)
-          }
+          setFlatName(data.flat_name)
+          setExpenses(mergedExpenses)
+          setSettlements(mergedSettlements)
+          
+          // Save merged records to database and local cache
+          saveToStorage(
+            data.flat_name,
+            roommates,
+            mergedExpenses,
+            mergedSettlements,
+            'System',
+            'Merged offline local records'
+          )
         } else {
-          console.error("Supabase fetch error:", error)
-          setDbError("Table 'flat_ledger' not found. Run SQL schema to sync databases across devices.")
+          setFlatName(data.flat_name)
+          setExpenses(dbExpenses)
+          setSettlements(dbSettlements)
         }
-      } else if (data) {
-        setFlatName(data.flat_name)
-        setExpenses(data.expenses || [])
-        setSettlements(data.settlements || [])
+
         setLastChangeBy(data.last_change_by || 'System')
         setLastChangeAction(data.last_change_action || 'Ledger Sync')
         setIsDbConnected(true)
@@ -126,43 +142,49 @@ export default function RetroApp() {
       }
     } catch (err: any) {
       console.error("Connection error:", err)
-      setDbError("Could not connect to database. Check credentials.")
+      setDbError(err.message || "Could not connect to database. Check server configuration.")
     } finally {
       setIsLoadingDb(false)
     }
   }
 
-  // Subscribe to Realtime DB updates
+  // Poll the database via Backend API for updates from other devices every 5 seconds
   useEffect(() => {
-    if (!supabase || !isDbConnected) return
+    let active = true
+    const poll = async () => {
+      // Don't poll if we're loading or if we recently saved locally (prevents race condition rollback)
+      if (isLoadingDb || Date.now() - lastLocalSaveRef.current < 4000) return
 
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'flat_ledger',
-          filter: 'id=eq.default'
-        },
-        (payload) => {
-          const newData = payload.new as any
-          if (newData) {
-            if (newData.flat_name !== undefined) setFlatName(newData.flat_name)
-            if (newData.expenses !== undefined) setExpenses(newData.expenses || [])
-            if (newData.settlements !== undefined) setSettlements(newData.settlements || [])
-            if (newData.last_change_by !== undefined) setLastChangeBy(newData.last_change_by)
-            if (newData.last_change_action !== undefined) setLastChangeAction(newData.last_change_action)
-          }
+      try {
+        const res = await fetch('/api/ledger?t=' + Date.now(), { cache: 'no-store' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (data && active) {
+          setFlatName((prev) => (prev !== data.flat_name ? data.flat_name : prev))
+          setExpenses((prev) => {
+            const serverExp = data.expenses || []
+            return JSON.stringify(prev) !== JSON.stringify(serverExp) ? serverExp : prev
+          })
+          setSettlements((prev) => {
+            const serverSettle = data.settlements || []
+            return JSON.stringify(prev) !== JSON.stringify(serverSettle) ? serverSettle : prev
+          })
+          setLastChangeBy((prev) => (prev !== data.last_change_by ? data.last_change_by : prev))
+          setLastChangeAction((prev) => (prev !== data.last_change_action ? data.last_change_action : prev))
+          setIsDbConnected(true)
+          setDbError(null)
         }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
+      } catch (err) {
+        console.error("Polling sync error:", err)
+      }
     }
-  }, [isDbConnected])
+
+    const interval = setInterval(poll, 5000)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [isLoadingDb])
 
   // Load from local storage on mount & check session storage & fetch from Supabase
   useEffect(() => {
@@ -202,13 +224,8 @@ export default function RetroApp() {
     const today = new Date().toISOString().split('T')[0]
     setExpDate(today)
 
-    // Fetch from Supabase
-    if (supabase) {
-      fetchLedgerFromDb()
-    } else {
-      setIsLoadingDb(false)
-      setDbError("Supabase credentials missing in environment variables.")
-    }
+    // Fetch from Backend API
+    fetchLedgerFromDb()
 
     // Listen for PWA beforeinstallprompt
     const handleBeforeInstall = (e: Event) => {
@@ -292,6 +309,9 @@ export default function RetroApp() {
     changeBy?: string,
     changeAction?: string
   ) => {
+    // Prevent poll rollback by marking the local edit time
+    lastLocalSaveRef.current = Date.now()
+
     // 1. Update local cache
     localStorage.setItem('flatsplit_flatName', updatedFlat)
     localStorage.setItem('flatsplit_roommates', JSON.stringify(updatedRoommates))
@@ -307,32 +327,33 @@ export default function RetroApp() {
 
     setStatusMessage('Saved locally.')
 
-    // 2. Sync to Supabase
-    if (supabase && isDbConnected) {
-      try {
-        setStatusMessage('Syncing with backend database...')
-        const { error } = await supabase
-          .from('flat_ledger')
-          .update({
-            flat_name: updatedFlat,
-            expenses: updatedExpenses,
-            settlements: updatedSettlements,
-            last_change_by: changeBy || lastChangeBy,
-            last_change_action: changeAction || lastChangeAction,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', 'default')
+    // 2. Sync to Backend API
+    try {
+      setStatusMessage('Syncing with backend database...')
+      const res = await fetch('/api/ledger', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          flat_name: updatedFlat,
+          expenses: updatedExpenses,
+          settlements: updatedSettlements,
+          last_change_by: changeBy || lastChangeBy,
+          last_change_action: changeAction || lastChangeAction
+        })
+      })
 
-        if (error) {
-          console.error("Supabase sync error:", error)
-          setStatusMessage('Sync failed. Saved locally only.')
-        } else {
-          setStatusMessage('Synced with backend successfully.')
-        }
-      } catch (err) {
-        console.error("Supabase sync exception:", err)
+      if (!res.ok) {
+        const errData = await res.json()
+        console.error("API sync error:", errData.error)
         setStatusMessage('Sync failed. Saved locally only.')
+      } else {
+        setStatusMessage('Synced with backend successfully.')
       }
+    } catch (err) {
+      console.error("API sync exception:", err)
+      setStatusMessage('Sync failed. Saved locally only.')
     }
   }
 
@@ -345,7 +366,7 @@ export default function RetroApp() {
     setStatusMessage('Admin session terminated.')
   }
 
-  // Helper to verify admin password and retrieve the author's identity (with 5-minute session cache)
+  // Helper to retrieve the author's identity (with 5-minute session cache)
   const verifyActionAndGetAuthor = (actionDescription: string): string | null => {
     const cachedTimeStr = sessionStorage.getItem('flatsplit_session_auth_time')
     const cachedAuthor = sessionStorage.getItem('flatsplit_session_author')
@@ -361,17 +382,9 @@ export default function RetroApp() {
       }
     }
 
-    // Otherwise, prompt for authorization
-    const pw = prompt(`Action Authorization required:\n"${actionDescription}"\n\nEnter admin password:`)
-    if (pw !== 'baroi') {
-      alert('Error: Incorrect password!')
-      setStatusMessage(`Error: "${actionDescription}" rejected (incorrect password).`)
-      return null
-    }
-
     const roommatesStr = roommates.join(', ')
     const author = prompt(
-      `Password accepted!\n\nWho is making this change?\n(Active flatmates: ${roommatesStr})`
+      `Action: "${actionDescription}"\n\nWho is making this change?\n(Active flatmates: ${roommatesStr})`
     )
 
     if (author === null) {
@@ -833,8 +846,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
               <li><strong>Step 1:</strong> List of roommates is locked to the 5 active members: Ayush, Aman, Piyush, Prem, Vishal.</li>
               <li><strong>Step 2:</strong> Type your title, amount, select who paid, choose a split formulation, and click <i>Add Shared Expense</i>.</li>
               <li><strong>Step 3:</strong> Review balances. If someone owes money, click the <i>Auto-Fill</i> button in the <i>Smart Settle Guide</i> to automatically populate the settlement recorder!</li>
-              <li><strong>🔒 Security Alert:</strong> To secure this ledger, all modifications require entering the password <strong><code>baroi</code></strong> and identifying which roommate is editing the record.</li>
-              <li><strong>⚡ Session Cache:</strong> After entering the password once, it will remain authorized for **5 minutes of inactivity**, preventing repetitive password prompts!</li>
+              <li><strong>✍️ Audit Trail:</strong> To maintain logs, all modifications ask you to identify which roommate is editing the record.</li>
+              <li><strong>⚡ Session Cache:</strong> After identifying yourself once, your identity remains active for **5 minutes of inactivity** to prevent repetitive prompts!</li>
             </ol>
           </div>
         </div>
@@ -997,7 +1010,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
               )}
 
               <div className="text-right" style={{ marginTop: '10px' }}>
-                <button type="submit" className="btn-accent">Add Shared Expense 🔒</button>
+                <button type="submit" className="btn-accent">Add Shared Expense</button>
               </div>
             </form>
           </fieldset>
@@ -1060,7 +1073,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
               </div>
 
               <div className="text-right" style={{ marginTop: '24px' }}>
-                <button type="submit" className="btn-accent">Record Settlement 🔒</button>
+                <button type="submit" className="btn-accent">Record Settlement</button>
               </div>
             </form>
           </fieldset>
@@ -1108,7 +1121,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
             </table>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
               <span className="text-muted">Total sum of all balances resolves to ₹0.</span>
-              <button type="button" className="btn-danger" onClick={handleClearAll}>Clear All Data 🔒</button>
+              <button type="button" className="btn-danger" onClick={handleClearAll}>Clear All Data</button>
             </div>
           </fieldset>
         </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flatsplit-v1';
+const CACHE_NAME = 'flatsplit-v2';
 const ASSETS = [
   '/',
   '/manifest.json',
@@ -34,6 +34,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   // Only intercept GET requests
   if (event.request.method !== 'GET') return;
+
+  // Do not intercept or cache server API requests
+  if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {

@@ -20,17 +20,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(reg) {
-                      console.log('SW registered:', reg.scope);
-                    },
-                    function(err) {
-                      console.log('SW registration failed:', err);
+              if (typeof window !== 'undefined') {
+                if ('serviceWorker' in navigator) {
+                  if (${process.env.NODE_ENV === 'production'}) {
+                    window.addEventListener('load', function() {
+                      navigator.serviceWorker.register('/sw.js').then(
+                        function(reg) {
+                          console.log('SW registered:', reg.scope);
+                        },
+                        function(err) {
+                          console.log('SW registration failed:', err);
+                        }
+                      );
+                    });
+                  } else {
+                    navigator.serviceWorker.getRegistrations().then(function(regs) {
+                      for (let reg of regs) {
+                        reg.unregister().then(function() {
+                          console.log('SW unregistered in development mode');
+                        });
+                      }
+                    });
+                    if ('caches' in window) {
+                      caches.keys().then(function(keys) {
+                        for (let key of keys) {
+                          caches.delete(key).then(function() {
+                            console.log('Cache cleared in development mode:', key);
+                          });
+                        }
+                      });
                     }
-                  );
-                });
+                  }
+                }
               }
             `
           }}
