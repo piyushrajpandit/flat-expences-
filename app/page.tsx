@@ -1054,37 +1054,39 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
             <legend>
               <span className="step-badge">Step 3</span> Active Net Balances
             </legend>
-            <table border={1}>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Net Balance</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roommates.map((name) => {
-                  const balance = netBalances[name] || 0
-                  const isCreditor = balance > 0
-                  const isDebtor = balance < 0
-                  return (
-                    <tr key={name}>
-                      <td><strong>{name}</strong></td>
-                      <td>
-                        <span className={`mono ${isCreditor ? 'text-success' : isDebtor ? 'text-danger' : ''}`}>
-                          ₹{balance.toFixed(2)}
-                        </span>
-                      </td>
-                      <td>
-                        {isCreditor && <span className="text-success">To Collect</span>}
-                        {isDebtor && <span className="text-danger">Owes Share</span>}
-                        {Math.abs(balance) <= 0.01 && <span style={{ color: '#888' }}>Settled</span>}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+            <div style={{ overflowX: 'auto' }}>
+              <table border={1}>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Net Balance</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roommates.map((name) => {
+                    const balance = netBalances[name] || 0
+                    const isCreditor = balance > 0
+                    const isDebtor = balance < 0
+                    return (
+                      <tr key={name}>
+                        <td><strong>{name}</strong></td>
+                        <td>
+                          <span className={`mono ${isCreditor ? 'text-success' : isDebtor ? 'text-danger' : ''}`}>
+                            ₹{balance.toFixed(2)}
+                          </span>
+                        </td>
+                        <td>
+                          {isCreditor && <span className="text-success">To Collect</span>}
+                          {isDebtor && <span className="text-danger">Owes Share</span>}
+                          {Math.abs(balance) <= 0.01 && <span style={{ color: '#888' }}>Settled</span>}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
               <span className="text-muted">Total sum of all balances resolves to ₹0.</span>
               <button type="button" className="btn-danger" onClick={handleClearAll}>Clear All Data</button>
