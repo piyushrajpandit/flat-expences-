@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import Link from 'next/link'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -32,7 +33,6 @@ interface Settlement {
 export default function RetroApp() {
   const [mounted, setMounted] = useState(false)
   const lastLocalSaveRef = useRef<number>(0)
-  const [showHelp, setShowHelp] = useState(true)
   const [flatName, setFlatName] = useState('My Shared Flat')
   
   // Lock roommates statically to Ayush, Aman, Piyush, Prem, Vishal
@@ -835,27 +835,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
       ) : null}
 
       {/* Beginner bulletin / instruction board */}
-      {showHelp ? (
-        <div className="bulletin-board">
-          <div className="bulletin-title">
-            <span>📌 Quick Help Guide (Beginner-Friendly)</span>
-            <button type="button" onClick={() => setShowHelp(false)} className="bulletin-toggle">Hide Board [x]</button>
-          </div>
-          <div className="bulletin-content">
-            <ol style={{ paddingLeft: '15px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              <li><strong>Step 1:</strong> List of roommates is locked to the 5 active members: Ayush, Aman, Piyush, Prem, Vishal.</li>
-              <li><strong>Step 2:</strong> Type your title, amount, select who paid, choose a split formulation, and click <i>Add Shared Expense</i>.</li>
-              <li><strong>Step 3:</strong> Review balances. If someone owes money, click the <i>Auto-Fill</i> button in the <i>Smart Settle Guide</i> to automatically populate the settlement recorder!</li>
-              <li><strong>✍️ Audit Trail:</strong> To maintain logs, all modifications ask you to identify which roommate is editing the record.</li>
-              <li><strong>⚡ Session Cache:</strong> After identifying yourself once, your identity remains active for **5 minutes of inactivity** to prevent repetitive prompts!</li>
-            </ol>
-          </div>
-        </div>
-      ) : (
-        <div style={{ textAlign: 'right', marginBottom: '16px' }}>
-          <button type="button" onClick={() => setShowHelp(true)} className="bulletin-toggle" style={{ fontSize: '12px' }}>Show Help [?]</button>
-        </div>
-      )}
+      <div style={{ textAlign: 'right', marginBottom: '16px' }}>
+        <Link href="/help" className="bulletin-toggle" style={{ fontSize: '12px', textDecoration: 'none', display: 'inline-block' }}>
+          Show Help [?]
+        </Link>
+      </div>
 
       {/* SECTION 1: Flat Settings (LOCKED & READ-ONLY) */}
       <fieldset>
