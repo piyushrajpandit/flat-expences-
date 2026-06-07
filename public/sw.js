@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flatsplit-v2';
+const CACHE_NAME = 'flatsplit-v3';
 const ASSETS = [
   '/',
   '/manifest.json',
