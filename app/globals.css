@@ -410,6 +410,63 @@ li {
   .text-right {
     text-align: left;
   }
+
+  /* Vertical stack/card layouts for wide tables on mobile screens */
+  .responsive-table {
+    display: block;
+    width: 100%;
+    border: none;
+  }
+  .responsive-table thead {
+    display: none;
+  }
+  .responsive-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .responsive-table tr {
+    display: block;
+    width: 100%;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    box-shadow: 2px 2px 0px rgba(46, 44, 40, 0.1);
+  }
+  .responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    text-align: right;
+    border: none !important;
+    border-bottom: 1px dashed var(--border-color) !important;
+    padding: 8px 0;
+    font-size: 12px;
+    background-color: transparent !important;
+  }
+  .responsive-table tr:nth-child(even) td {
+    background-color: transparent !important;
+  }
+  .responsive-table td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 4px;
+  }
+  .responsive-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    font-family: var(--font-serif);
+    color: var(--text-muted);
+    text-align: left;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .responsive-table td > span,
+  .responsive-table td > strong,
+  .responsive-table td > button {
+    max-width: 65%;
+    word-break: break-word;
+    display: inline-block;
+  }
 }
 
 @media (max-width: 480px) {

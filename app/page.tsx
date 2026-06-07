@@ -1137,7 +1137,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table border={1}>
+            <table border={1} className="responsive-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -1153,28 +1153,28 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
               <tbody>
                 {expenses.map((exp) => (
                   <tr key={exp.id}>
-                    <td>{exp.date}</td>
-                    <td>
+                    <td data-label="Date">{exp.date}</td>
+                    <td data-label="Category">
                       <span style={{ fontSize: '11px', padding: '2px 6px', border: '1px solid var(--border-color)', backgroundColor: '#faf8f2' }}>
                         {exp.category}
                       </span>
                     </td>
-                    <td><strong>{exp.title}</strong></td>
-                    <td><span className="mono">₹{exp.amount.toFixed(2)}</span></td>
-                    <td><strong>{exp.paidBy}</strong></td>
-                    <td style={{ fontSize: '12px' }}>
+                    <td data-label="Description"><strong>{exp.title}</strong></td>
+                    <td data-label="Total Amount"><span className="mono">₹{exp.amount.toFixed(2)}</span></td>
+                    <td data-label="Paid By"><strong>{exp.paidBy}</strong></td>
+                    <td data-label="Split Breakdown" style={{ fontSize: '12px' }}>
                       <span className="text-muted">
                         {Object.entries(exp.shares)
                           .map(([name, share]) => `${name}: ₹${share.toFixed(2)}`)
                           .join(', ')}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Added By">
                       <span style={{ fontStyle: 'italic', color: 'var(--accent)', fontWeight: 'bold' }}>
                         {exp.createdBy || 'Admin'}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Action">
                       <button
                         type="button"
                         className="btn-danger"
@@ -1201,7 +1201,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table border={1}>
+            <table border={1} className="responsive-table">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -1216,17 +1216,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
               <tbody>
                 {settlements.map((s) => (
                   <tr key={s.id}>
-                    <td>{s.date}</td>
-                    <td><strong>{s.from}</strong></td>
-                    <td><strong>{s.to}</strong></td>
-                    <td><span className="text-success mono">₹{s.amount.toFixed(2)}</span></td>
-                    <td><i>{s.note}</i></td>
-                    <td>
+                    <td data-label="Date">{s.date}</td>
+                    <td data-label="From"><strong>{s.from}</strong></td>
+                    <td data-label="To"><strong>{s.to}</strong></td>
+                    <td data-label="Amount Paid"><span className="text-success mono">₹{s.amount.toFixed(2)}</span></td>
+                    <td data-label="Note"><i>{s.note}</i></td>
+                    <td data-label="Added By">
                       <span style={{ fontStyle: 'italic', color: 'var(--accent)', fontWeight: 'bold' }}>
                         {s.createdBy || 'Admin'}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Action">
                       <button
                         type="button"
                         className="btn-danger"
