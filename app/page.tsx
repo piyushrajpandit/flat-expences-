@@ -1221,6 +1221,9 @@ export default function RetroApp() {
               </div>
             )}
           </div>
+        </fieldset>
+      )}
+
       {/* Database Connection Alert */}
       {dbError ? (
         <div style={{
