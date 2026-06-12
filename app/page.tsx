@@ -766,82 +766,6 @@ export default function RetroApp() {
       </div>
 
 
-      {/* Database Connection Alert */}
-      {dbError ? (
-        <div style={{
-          background: '#fff0f0',
-          border: '2px solid #ff4444',
-          borderRadius: '4px',
-          padding: '12px',
-          marginBottom: '16px',
-          color: '#880000',
-          fontSize: '13px',
-          lineHeight: '1.5'
-        }}>
-          <strong style={{ fontSize: '14px' }}>⚠️ Backend Offline (Running in Local Mode)</strong>
-          <p style={{ margin: '6px 0' }}>
-            Data is currently saved **only in your browser** and will not sync across other phones. To sync the ledger across everyone's phones, please run this single SQL query in your **Supabase Dashboard → SQL Editor**:
-          </p>
-          <pre style={{
-            background: '#ffffff',
-            border: '1px solid #ffcccc',
-            padding: '8px',
-            fontSize: '11px',
-            overflowX: 'auto',
-            fontFamily: 'monospace',
-            whiteSpace: 'pre-wrap',
-            userSelect: 'all',
-            cursor: 'pointer'
-          }} title="Click to select all for easy copying">
-{`CREATE TABLE IF NOT EXISTS flat_ledger (
-  id TEXT PRIMARY KEY,
-  flat_name TEXT NOT NULL,
-  expenses JSONB NOT NULL DEFAULT '[]'::jsonb,
-  settlements JSONB NOT NULL DEFAULT '[]'::jsonb,
-  last_change_by TEXT NOT NULL DEFAULT 'System',
-  last_change_action TEXT NOT NULL DEFAULT 'Ledger Initialized',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Disable RLS so all roommates can sync without emails
-ALTER TABLE flat_ledger DISABLE ROW LEVEL SECURITY;
-
--- Enable Realtime so updates sync instantly in real-time
-ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
-          </pre>
-          <p style={{ fontSize: '11px', margin: '4px 0 0 0', color: '#555555' }}>
-            Once you execute the query, refresh this page. It will automatically detect the database and start syncing instantly!
-          </p>
-        </div>
-      ) : isDbConnected ? (
-        <div style={{
-          background: '#f0fff0',
-          border: '2px solid #22bb22',
-          borderRadius: '4px',
-          padding: '8px 12px',
-          marginBottom: '16px',
-          color: '#006600',
-          fontSize: '13px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <span><strong>🟢 Backend Database Online</strong> — Synced & updated in real time across all roommates' phones!</span>
-          <span style={{ fontSize: '11px', background: '#d0ffd0', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>REAL-TIME ACTIVE</span>
-        </div>
-      ) : isLoadingDb ? (
-        <div style={{
-          background: '#fffae6',
-          border: '2px solid #cca300',
-          borderRadius: '4px',
-          padding: '8px 12px',
-          marginBottom: '16px',
-          color: '#665200',
-          fontSize: '13px'
-        }}>
-          <span>⏳ Checking backend database connection...</span>
-        </div>
-      ) : null}
 
       {/* Beginner bulletin / instruction board */}
       <div style={{ textAlign: 'right', marginBottom: '16px' }}>
@@ -1297,8 +1221,82 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
               </div>
             )}
           </div>
-        </fieldset>
-      )}
+      {/* Database Connection Alert */}
+      {dbError ? (
+        <div style={{
+          background: '#fff0f0',
+          border: '2px solid #ff4444',
+          borderRadius: '4px',
+          padding: '12px',
+          marginBottom: '16px',
+          color: '#880000',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        }}>
+          <strong style={{ fontSize: '14px' }}>⚠️ Backend Offline (Running in Local Mode)</strong>
+          <p style={{ margin: '6px 0' }}>
+            Data is currently saved **only in your browser** and will not sync across other phones. To sync the ledger across everyone's phones, please run this single SQL query in your **Supabase Dashboard → SQL Editor**:
+          </p>
+          <pre style={{
+            background: '#ffffff',
+            border: '1px solid #ffcccc',
+            padding: '8px',
+            fontSize: '11px',
+            overflowX: 'auto',
+            fontFamily: 'monospace',
+            whiteSpace: 'pre-wrap',
+            userSelect: 'all',
+            cursor: 'pointer'
+          }} title="Click to select all for easy copying">
+{`CREATE TABLE IF NOT EXISTS flat_ledger (
+  id TEXT PRIMARY KEY,
+  flat_name TEXT NOT NULL,
+  expenses JSONB NOT NULL DEFAULT '[]'::jsonb,
+  settlements JSONB NOT NULL DEFAULT '[]'::jsonb,
+  last_change_by TEXT NOT NULL DEFAULT 'System',
+  last_change_action TEXT NOT NULL DEFAULT 'Ledger Initialized',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Disable RLS so all roommates can sync without emails
+ALTER TABLE flat_ledger DISABLE ROW LEVEL SECURITY;
+
+-- Enable Realtime so updates sync instantly in real-time
+ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
+          </pre>
+          <p style={{ fontSize: '11px', margin: '4px 0 0 0', color: '#555555' }}>
+            Once you execute the query, refresh this page. It will automatically detect the database and start syncing instantly!
+          </p>
+        </div>
+      ) : isDbConnected ? (
+        <div style={{
+          background: '#f0fff0',
+          border: '2px solid #22bb22',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          marginBottom: '16px',
+          color: '#006600',
+          fontSize: '13px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span><strong>🟢 Backend Database Online</strong> — Synced & updated in real time across all roommates' phones!</span>
+          <span style={{ fontSize: '11px', background: '#d0ffd0', padding: '2px 6px', borderRadius: '3px', fontWeight: 'bold' }}>REAL-TIME ACTIVE</span>
+        </div>
+      ) : isLoadingDb ? (
+        <div style={{
+          background: '#fffae6',
+          border: '2px solid #cca300',
+          borderRadius: '4px',
+          padding: '8px 12px',
+          marginBottom: '16px',
+          color: '#665200',
+          fontSize: '13px'
+        }}>
+          <span>⏳ Checking backend database connection...</span>
+        </div>
+      ) : null}
 
       {/* Audit-trail Statusbar displaying last activity */}
       <div className="statusbar">
