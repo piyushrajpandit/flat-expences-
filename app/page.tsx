@@ -989,6 +989,23 @@ export default function RetroApp() {
                 <button type="submit" className="btn-accent">Record Settlement</button>
               </div>
             </form>
+            <div style={{ 
+              marginTop: '16px', 
+              borderTop: '1px dashed var(--border-color)', 
+              paddingTop: '16px', 
+              textAlign: 'center' 
+            }}>
+              <p style={{ fontWeight: 'bold', fontSize: '11px', marginBottom: '8px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                ⚡ Scan to Pay / Settle via UPI
+              </p>
+              <div style={{ display: 'inline-block', padding: '6px', background: '#ffffff', border: '1px solid var(--border-color)' }}>
+                <img 
+                  src="/qr.png" 
+                  alt="UPI QR Code" 
+                  style={{ width: '130px', height: '130px', display: 'block' }} 
+                />
+              </div>
+            </div>
           </fieldset>
         </div>
       </div>
