@@ -47,6 +47,7 @@ export default function RetroApp() {
   const [lastChangeAction, setLastChangeAction] = useState<string>('Ledger Initialized')
 
   // Form states
+  const expTitleInputRef = useRef<HTMLInputElement>(null)
   const [expTitle, setExpTitle] = useState('')
   const [expAmount, setExpAmount] = useState('')
   const [expPaidBy, setExpPaidBy] = useState('')
@@ -283,6 +284,14 @@ export default function RetroApp() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
     }
   }, [])
+
+
+  // Default paidBy to current authenticated roommate session
+  useEffect(() => {
+    if (sessionAuthor) {
+      setExpPaidBy(sessionAuthor)
+    }
+  }, [sessionAuthor])
 
   // Custom click handler for PWA install
   const handleInstallClick = async () => {
@@ -844,21 +853,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
       {/* SECTION 2: Operations forms */}
       <div className="row">
         {/* Add Shared Expense */}
-        <div className="col-6">
+        <div className="col-6 expense-form-container">
           <fieldset style={{ height: '100%' }}>
-            <legend>
-              <span className="step-badge">Step 1</span> Record Shared Expense
+            <legend style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span><span className="step-badge">Step 1</span> Record Shared Expense</span>
             </legend>
             <form onSubmit={handleAddExpense} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <label htmlFor="exp-title">Description / Title</label>
                 <input
                   id="exp-title"
+                  ref={expTitleInputRef}
                   type="text"
                   value={expTitle}
                   onChange={(e) => setExpTitle(e.target.value)}
                   placeholder="e.g. Broadband, Rent, Groceries"
                   required
+                  autoFocus
                 />
               </div>
 
@@ -876,29 +887,6 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
                   />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: '1' }}>
-                  <label htmlFor="exp-payer">Paid By</label>
-                  <select id="exp-payer" value={expPaidBy} onChange={(e) => setExpPaidBy(e.target.value)} required>
-                    {roommates.map((r) => (
-                      <option key={r} value={r}>
-                        {r}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: '1' }}>
-                  <label htmlFor="exp-category">Category</label>
-                  <select id="exp-category" value={expCategory} onChange={(e) => setExpCategory(e.target.value)}>
-                    <option value="Food">Food</option>
-                    <option value="Rent">Rent</option>
-                    <option value="Electricity">Electricity</option>
-                    <option value="WiFi">WiFi</option>
-                    <option value="Others">Others</option>
-                  </select>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: '1' }}>
                   <label htmlFor="exp-date">Date</label>
                   <input
                     id="exp-date"
@@ -906,6 +894,38 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
                     value={expDate}
                     onChange={(e) => setExpDate(e.target.value)}
                   />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <label>Paid By</label>
+                <div className="pill-selector">
+                  {roommates.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={`pill-button ${expPaidBy === r ? 'active' : ''}`}
+                      onClick={() => setExpPaidBy(r)}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <label>Category</label>
+                <div className="pill-selector">
+                  {['Food', 'Rent', 'Electricity', 'WiFi', 'Others'].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className={`pill-button ${expCategory === cat ? 'active' : ''}`}
+                      onClick={() => setExpCategory(cat)}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -979,6 +999,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
                 <button type="submit" className="btn-accent">Add Shared Expense</button>
               </div>
             </form>
+            <div className="scroll-hint">
+              ↓ Scroll down for balances & history
+            </div>
           </fieldset>
         </div>
 
@@ -1286,6 +1309,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE flat_ledger;`}
           Roommates: {roommates.length}
         </div>
       </div>
+
     </div>
   )
 }
