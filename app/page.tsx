@@ -742,7 +742,7 @@ export default function RetroApp() {
       <div className="portal-header">
         <div className="portal-title-row">
           <div>
-            <h1>FlatSplit 🏠⚡</h1>
+            <h1>Lesbian Split 🏠⚡</h1>
             <p className="subtitle">Shared Expense Ledger &amp; Settlement System</p>
           </div>
           <div className="header-meta">

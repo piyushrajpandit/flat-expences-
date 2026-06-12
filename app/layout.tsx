@@ -2,13 +2,13 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'FlatSplit — Shared Retro Expense Manager',
+  title: 'Lesbian Split — Shared Retro Expense Manager',
   description: 'Classic single-page expense manager for flatmates.',
   manifest: '/manifest.json',
   other: {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    'apple-mobile-web-app-title': 'FlatSplit'
+    'apple-mobile-web-app-title': 'Lesbian Split'
   }
 }
 
