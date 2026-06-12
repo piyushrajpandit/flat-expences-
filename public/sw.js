@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flatsplit-v3';
+const CACHE_NAME = 'lesbian-split-v1';
 const ASSETS = [
   '/',
   '/manifest.json',
@@ -39,26 +39,26 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('/api/')) return;
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
+    fetch(event.request).then((networkResponse) => {
+      // Cache new local assets dynamically if request succeeds
+      if (
+        networkResponse.status === 200 &&
+        (event.request.url.startsWith(self.location.origin) ||
+         event.request.url.includes('fonts.googleapis.com') ||
+         event.request.url.includes('fonts.gstatic.com'))
+      ) {
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
       }
-      return fetch(event.request).then((networkResponse) => {
-        // Cache new local assets dynamically if request succeeds
-        if (
-          networkResponse.status === 200 &&
-          (event.request.url.startsWith(self.location.origin) ||
-           event.request.url.includes('fonts.googleapis.com') ||
-           event.request.url.includes('fonts.gstatic.com'))
-        ) {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+      return networkResponse;
+    }).catch(() => {
+      // Offline fallback: check cache
+      return caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        return networkResponse;
-      }).catch(() => {
-        // Offline fallback
         return caches.match('/');
       });
     })
