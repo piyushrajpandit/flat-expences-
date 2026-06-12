@@ -470,7 +470,7 @@ li {
 
   /* Mobile Expense Full-screen container */
   .expense-form-container {
-    min-height: 100vh;
+    min-height: 80vh;
     display: flex;
     align-items: center;
     justify-content: center;
